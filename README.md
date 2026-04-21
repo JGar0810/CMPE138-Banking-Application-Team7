@@ -68,7 +68,7 @@ python -m pip install -r requirements.txt
 Run the CLI:
 
 ```bash
-python main.py
+python -m app.main
 ```
 
 Implemented options:
