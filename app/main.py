@@ -5,6 +5,7 @@ import bcrypt
 from app.db import get_connection
 from app.logger import log_action, log_error
 from app.ahmad_ops import AhmadBankingService
+from app.evan_ops import EvanBankingService
 
 
 # ----------------------------
@@ -38,6 +39,15 @@ def print_result(result):
     if result.payload:
         for k, v in result.payload.items():
             print(f"  {k}: {v}")
+    print()
+
+def print_rows(title, rows):
+    print(f"\n--- {title} ---")
+    if not rows:
+        print("No records found.\n")
+        return
+    for row in rows:
+        print(row)
     print()
 # ----------------------------
 # LOGIN
@@ -82,6 +92,9 @@ def login():
 # MENUS
 # ----------------------------
 def customer_menu(user):
+    conn = get_connection()
+    service = EvanBankingService(conn)
+
     while True:
         print("\n--- Customer Menu ---")
         print("1. View Accounts")
@@ -95,17 +108,90 @@ def customer_menu(user):
         choice = input("Select: ").strip()
 
         if choice == "1":
-            pass  # Evan fills this in
+            result = service.view_accounts(user["customer_id"])
+            if result["ok"]:
+                print_rows("Accounts", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "2":
-            pass  # Evan fills this in
+            result = service.view_transactions(user["customer_id"])
+            if result["ok"]:
+                print_rows("Transactions", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "3":
-            pass  # Evan fills this in
+            print("\nLeave blank if you do not want to change a field.")
+            address = input("New address: ").strip()
+            phone = input("New phone: ").strip()
+            email = input("New email: ").strip()
+
+            result = service.update_profile(
+                user["customer_id"],
+                address=address or None,
+                phone=phone or None,
+                email=email or None,
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "4":
-            pass  # Evan fills this in
+            loan_amount = input("Loan amount: ").strip()
+            interest_rate = input("Interest rate (%): ").strip()
+            loan_term_months = input("Loan term in months: ").strip()
+
+            result = service.apply_for_loan(
+                user["customer_id"],
+                loan_amount,
+                interest_rate,
+                loan_term_months
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print(f"Loan ID: {result['loan_id']}")
+                print(f"Monthly Payment: {result['monthly_payment']}")
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "5":
-            pass  # Evan fills this in
+            result = service.view_loan_status(user["customer_id"])
+            if result["ok"]:
+                print_rows("Loans", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "6":
-            pass  # Evan fills this in
+            loan_id = input("Loan ID: ").strip()
+            amount = input("Payment amount: ").strip()
+
+            result = service.make_loan_payment(
+                user["customer_id"],
+                loan_id,
+                amount
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print(f"Paid Amount: {result['paid_amount']}")
+                print(f"Remaining Balance: {result['remaining_balance']}")
+                print(f"Loan Status: {result['loan_status']}")
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "7":
             pass  # Ahmad fills this in
         elif choice == "0":
@@ -113,6 +199,8 @@ def customer_menu(user):
             break
         else:
             print("Invalid option.")
+    
+    conn.close()
 
 def teller_menu(user):
     conn = get_connection()
