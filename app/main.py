@@ -1,25 +1,44 @@
 # SJSU CMPE 138 SPRING 2026 TEAM7
 
-import mysql.connector
+
 import bcrypt
-import os
-from dotenv import load_dotenv
-from logger import log_action, log_error
+from app.db import get_connection
+from app.logger import log_action, log_error
+from app.ahmad_ops import AhmadBankingService
 
-load_dotenv()
 
 # ----------------------------
-# DB CONNECTION
+# HELPER FUNCTIONS
 # ----------------------------
-def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=int(os.getenv("DB_PORT", 3306)),
-        user=os.getenv("DB_USER", "banking_user"),
-        password=os.getenv("DB_PASSWORD", "banking_pass"),
-        database=os.getenv("DB_NAME", "banking_system")
-    )
+def ask_int(prompt: str, allow_blank: bool = False):
+    while True:
+        raw = input(prompt).strip()
+        if allow_blank and raw == "":
+            return None
+        try:
+            return int(raw)
+        except ValueError:
+            print("Please enter a whole number.")
 
+def ask_amount(prompt: str, allow_zero: bool = False):
+    while True:
+        raw = input(prompt).strip()
+        try:
+            value = float(raw)
+            if value < 0 or (not allow_zero and value == 0):
+                raise ValueError
+            return raw
+        except ValueError:
+            extra = " or 0" if allow_zero else ""
+            print(f"Please enter a positive number{extra}.")
+
+def print_result(result):
+    print("\nSUCCESS" if result.ok else "\nERROR")
+    print(result.message)
+    if result.payload:
+        for k, v in result.payload.items():
+            print(f"  {k}: {v}")
+    print()
 # ----------------------------
 # LOGIN
 # ----------------------------
@@ -96,6 +115,8 @@ def customer_menu(user):
             print("Invalid option.")
 
 def teller_menu(user):
+    conn = get_connection()
+    service = AhmadBankingService(conn)
     while True:
         print("\n--- Teller Menu ---")
         print("1. Process Deposit")
@@ -107,13 +128,29 @@ def teller_menu(user):
         choice = input("Select: ").strip()
 
         if choice == "1":
-            pass  # Ahmad fills this in
+            account_id = ask_int("Account ID: ")
+            amount = ask_amount("Deposit amount: ")
+            teller_id = user["employee_id"]
+            description = input("Description [CLI deposit]: ").strip() or "CLI deposit"
+            result = service.process_deposit(account_id, amount, teller_id, description)
+            print_result(result)
         elif choice == "2":
-            pass  # Ahmad fills this in
+            account_id = ask_int("Account ID: ")
+            amount = ask_amount("Withdrawal amount: ")
+            teller_id = user["employee_id"]
+            description = input("Description [CLI withdrawal]: ").strip() or "CLI withdrawal"
+            result = service.process_withdrawal(account_id, amount, teller_id, description)
+            print_result(result)
         elif choice == "3":
-            pass  # Ahmad fills this in
+            customer_id = ask_int("Customer ID: ")
+            account_type = input("Account type (checking/savings): ").strip().lower()
+            opening_deposit = ask_amount("Opening deposit (0 allowed): ", allow_zero=True)
+            result = service.open_account(customer_id, account_type, opening_deposit, user["employee_id"])
+            print_result(result)
         elif choice == "4":
-            pass  # Ahmad fills this in
+            account_id = ask_int("Account ID: ")
+            result = service.close_account(account_id)
+            print_result(result)
         elif choice == "5":
             transfer_funds(user)
         elif choice == "0":
@@ -121,6 +158,7 @@ def teller_menu(user):
             break
         else:
             print("Invalid option.")
+    conn.close()
 
 def loan_officer_menu(user):
     while True:
