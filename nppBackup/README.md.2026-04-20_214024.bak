@@ -125,25 +125,6 @@ This phase adds core banking operations to the CLI system, integrated with the M
 
 ---
 
-# Cases and Setup
-
-- 1: After setting up Docker and your environment, verify database with:
-```bash
-winpty docker exec -it banking_db mysql -u root -prootpass
-```
-Then,
-```SQL
-USE banking_system;
-SHOW TABLES;
-```
-
-If you see the table, your environment is properly set up.
-
-- 2: run `python -m pip install -r requirements.txt` in bash.
-
-- 3: run 'python main.py`
-
-
 ## Cases Tested
 
 Keep in mind that these tests are conducted one after another. Run `python main.py` first after your environment is set up. Check the instructions above. This is by no means extensive. Check results in SQL with:
