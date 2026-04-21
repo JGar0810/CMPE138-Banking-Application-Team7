@@ -1,5 +1,19 @@
 -- SJSU CMPE 138 SPRING 2026 TEAM7
 -- Banking Management System — Sample Data
+
+-- LOGIN CREDENTIALS:
+-- +-----------------+-------------+---------------+
+-- | Login ID        | Password    | Role          |
+-- +-----------------+-------------+---------------+
+-- | jdoe            | password123 | customer      |
+-- | asmith          | password456 | customer      |
+-- | mjohnson        | password789 | customer      |
+-- | teller_jane     | teller123   | teller        |
+-- | teller_bob      | teller456   | teller        |
+-- | lo_sarah        | loan123     | loan_officer  |
+-- | mgr_tom         | manager123  | manager       |
+-- +-----------------+-------------+---------------+
+
 USE banking_system;
 
 INSERT INTO Branch (branch_id, branch_name, location, phone) VALUES
