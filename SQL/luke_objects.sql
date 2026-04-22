@@ -15,10 +15,17 @@ DROP PROCEDURE IF EXISTS sp_get_customer_summary;
 DROP TRIGGER IF EXISTS trg_prevent_negative_balance;
 DROP TRIGGER IF EXISTS trg_card_expiry_check;
 
-DROP INDEX IF EXISTS idx_account_customer_id ON Account;
-DROP INDEX IF EXISTS idx_transaction_account_date ON `Transaction`;
-DROP INDEX IF EXISTS idx_loan_customer_status ON Loan;
+SET @x = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'Account' AND index_name = 'idx_account_customer_id');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_account_customer_id ON Account', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+SET @x = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'Transaction' AND index_name = 'idx_transaction_account_date');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_transaction_account_date ON `Transaction`', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @x = (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'Loan' AND index_name = 'idx_loan_customer_status');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_loan_customer_status ON Loan', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- =========================
 -- VIEWS
 -- =========================

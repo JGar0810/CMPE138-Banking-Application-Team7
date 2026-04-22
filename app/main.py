@@ -82,37 +82,73 @@ def login():
 # MENUS
 # ----------------------------
 def customer_menu(user):
+    conn = get_connection()
     while True:
         print("\n--- Customer Menu ---")
         print("1. View Accounts")
         print("2. View Transactions")
-        print("3. Update Profile")
-        print("4. Apply for Loan")
-        print("5. View Loan Status")
-        print("6. Make Loan Payment")
-        print("7. Request Card")
+        print("3. View Customer Summary")
+        print("4. Update Profile")
+        print("5. Apply for Loan")
+        print("6. View Loan Status")
+        print("7. Make Loan Payment")
+        print("8. Request Card")
         print("0. Logout")
         choice = input("Select: ").strip()
 
         if choice == "1":
-            pass  # Evan fills this in
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc("sp_get_customer_accounts", [user["customer_id"]])
+            for result in cursor.stored_results():
+                rows = result.fetchall()
+                if not rows:
+                    print("No accounts found.")
+                else:
+                    print(f"\n{'ID':<6} {'Type':<12} {'Balance':<12} {'Status':<10} {'Opened'}")
+                    print("-" * 55)
+                    for row in rows:
+                        print(f"{row['account_id']:<6} {row['account_type']:<12} ${row['balance']:<11} {row['status']:<10} {row['date_opened']}")
+            log_action(user["username"], "VIEW_ACCOUNTS", "Success")
+            cursor.close()
+
         elif choice == "2":
-            pass  # Evan fills this in
+            account_id = ask_int("Account ID: ")
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc("sp_get_account_transactions", [account_id])
+            for result in cursor.stored_results():
+                rows = result.fetchall()
+                if not rows:
+                    print("No transactions found.")
+                else:
+                    print(f"\n{'ID':<6} {'Type':<15} {'Amount':<12} {'Date':<22} {'Description'}")
+                    print("-" * 70)
+                    for row in rows:
+                        print(f"{row['transaction_id']:<6} {row['transaction_type']:<15} ${row['amount']:<11} {str(row['transaction_date']):<22} {row['description']}")
+            log_action(user["username"], "VIEW_TRANSACTIONS", f"account {account_id}")
+            cursor.close()
+
         elif choice == "3":
-            pass  # Evan fills this in
-        elif choice == "4":
-            pass  # Evan fills this in
-        elif choice == "5":
-            pass  # Evan fills this in
-        elif choice == "6":
-            pass  # Evan fills this in
-        elif choice == "7":
-            pass  # Ahmad fills this in
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc("sp_get_customer_summary", [user["customer_id"]])
+            for result in cursor.stored_results():
+                rows = result.fetchall()
+                for row in rows:
+                    print(f"\nCustomer: {row['customer_name']}")
+                    print(f"Total Accounts: {row['total_accounts']}")
+                    print(f"Total Balance: ${row['total_deposit_balance']}")
+                    print(f"Total Loans: {row['total_loans']}")
+                    print(f"Remaining Loan Balance: ${row['total_remaining_loan_balance']}")
+            log_action(user["username"], "VIEW_SUMMARY", "Success")
+            cursor.close()
+
+        elif choice in ("4", "5", "6", "7", "8"):
+            print("Coming soon — Evan/Ahmad's operations.")
         elif choice == "0":
             print("Logged out.")
             break
         else:
             print("Invalid option.")
+    conn.close()
 
 def teller_menu(user):
     conn = get_connection()
@@ -222,10 +258,12 @@ def manager_menu(user):
 # ----------------------------
 def transfer_funds(user):
     print("\n--- Fund Transfer ---")
+    conn = None
+    cursor = None
     try:
-        from_account = input("From Account ID: ").strip()
-        to_account = input("To Account ID: ").strip()
-        amount = float(input("Amount: $").strip())
+        from_account = ask_int("From Account ID: ")
+        to_account = ask_int("To Account ID: ")
+        amount = float(ask_amount("Amount: $"))
 
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -238,7 +276,7 @@ def transfer_funds(user):
             print("Source account not found or inactive.")
             return
 
-        if source["balance"] < amount:
+        if float(source["balance"]) < amount:
             print("Insufficient funds.")
             return
 
@@ -250,9 +288,7 @@ def transfer_funds(user):
             print("Destination account not found or inactive.")
             return
 
-        # Execute transfer as a transaction
-        conn.start_transaction()
-
+        
         cursor.execute("UPDATE Account SET balance = balance - %s WHERE account_id = %s", (amount, from_account))
         cursor.execute("UPDATE Account SET balance = balance + %s WHERE account_id = %s", (amount, to_account))
 
@@ -271,13 +307,16 @@ def transfer_funds(user):
         print(f"\nTransfer of ${amount:.2f} successful!")
 
     except Exception as e:
-        conn.rollback()
+        if conn:
+            conn.rollback()
         log_error(user.get("login_id", "unknown"), "TRANSFER", str(e))
         print(f"Transfer failed: {e}")
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ----------------------------
 # MAIN
