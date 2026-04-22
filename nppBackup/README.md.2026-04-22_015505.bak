@@ -127,17 +127,6 @@ This phase adds core banking operations to the CLI system, integrated with the M
   - Balance must be `0`
   - No active cards linked
 
-### 5. Request New Card 
-- Requests account ID
-- Input card number
-- Requests employee ID
-- Issues card
-
-### 6. Report Lost Card 
-- Request card number
-- Request employee issuer ID
-- If inputs accepted, card gets blocked and reported
-
 ---
 
 # Cases and Setup

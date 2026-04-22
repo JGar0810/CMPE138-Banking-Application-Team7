@@ -1,5 +1,27 @@
 # SJSU CMPE 138 SPRING 2026 TEAM7
 
+<<<<<<< HEAD
+import mysql.connector
+import bcrypt
+import os
+from dotenv import load_dotenv
+from logger import log_action, log_error
+
+load_dotenv()
+
+# ----------------------------
+# DB CONNECTION
+# ----------------------------
+def get_connection():
+    return mysql.connector.connect(
+        host=os.getenv("DB_HOST", "127.0.0.1"),
+        port=int(os.getenv("DB_PORT", 3306)),
+        user=os.getenv("DB_USER", "banking_user"),
+        password=os.getenv("DB_PASSWORD", "banking_pass"),
+        database=os.getenv("DB_NAME", "banking_system")
+    )
+
+=======
 
 import bcrypt
 from app.db import get_connection
@@ -51,6 +73,7 @@ def print_rows(title, rows):
         for k, v in row.items():
             print(f"  {k}: {v}")
     print()
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
 # ----------------------------
 # LOGIN
 # ----------------------------
@@ -94,9 +117,12 @@ def login():
 # MENUS
 # ----------------------------
 def customer_menu(user):
+<<<<<<< HEAD
+=======
     conn = get_connection()
     service = EvanBankingService(conn)
 
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
     while True:
         print("\n--- Customer Menu ---")
         print("1. View Accounts")
@@ -110,6 +136,19 @@ def customer_menu(user):
         choice = input("Select: ").strip()
 
         if choice == "1":
+<<<<<<< HEAD
+            pass  # Evan fills this in
+        elif choice == "2":
+            pass  # Evan fills this in
+        elif choice == "3":
+            pass  # Evan fills this in
+        elif choice == "4":
+            pass  # Evan fills this in
+        elif choice == "5":
+            pass  # Evan fills this in
+        elif choice == "6":
+            pass  # Evan fills this in
+=======
             result = service.view_accounts(user["customer_id"])
             if result["ok"]:
                 print_rows("Accounts", result["rows"])
@@ -194,6 +233,7 @@ def customer_menu(user):
                 print("\nERROR")
                 print(result["message"])
                 print()
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
         elif choice == "7":
             pass  # Ahmad fills this in
         elif choice == "0":
@@ -201,12 +241,17 @@ def customer_menu(user):
             break
         else:
             print("Invalid option.")
+<<<<<<< HEAD
+
+def teller_menu(user):
+=======
     
     conn.close()
 
 def teller_menu(user):
     conn = get_connection()
     service = AhmadBankingService(conn)
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
     while True:
         print("\n--- Teller Menu ---")
         print("1. Process Deposit")
@@ -218,6 +263,15 @@ def teller_menu(user):
         choice = input("Select: ").strip()
 
         if choice == "1":
+<<<<<<< HEAD
+            pass  # Ahmad fills this in
+        elif choice == "2":
+            pass  # Ahmad fills this in
+        elif choice == "3":
+            pass  # Ahmad fills this in
+        elif choice == "4":
+            pass  # Ahmad fills this in
+=======
             account_id = ask_int("Account ID: ")
             amount = ask_amount("Deposit amount: ")
             teller_id = user["employee_id"]
@@ -241,6 +295,7 @@ def teller_menu(user):
             account_id = ask_int("Account ID: ")
             result = service.close_account(account_id)
             print_result(result)
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
         elif choice == "5":
             transfer_funds(user)
         elif choice == "0":
@@ -248,7 +303,10 @@ def teller_menu(user):
             break
         else:
             print("Invalid option.")
+<<<<<<< HEAD
+=======
     conn.close()
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
 
 def loan_officer_menu(user):
     while True:
@@ -312,12 +370,19 @@ def manager_menu(user):
 # ----------------------------
 def transfer_funds(user):
     print("\n--- Fund Transfer ---")
+<<<<<<< HEAD
+    try:
+        from_account = input("From Account ID: ").strip()
+        to_account = input("To Account ID: ").strip()
+        amount = float(input("Amount: $").strip())
+=======
     conn = None
     cursor = None
     try:
         from_account = ask_int("From Account ID: ")
         to_account = ask_int("To Account ID: ")
         amount = float(ask_amount("Amount: $"))
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
 
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -330,7 +395,11 @@ def transfer_funds(user):
             print("Source account not found or inactive.")
             return
 
+<<<<<<< HEAD
+        if source["balance"] < amount:
+=======
         if float(source["balance"]) < amount:
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
             print("Insufficient funds.")
             return
 
@@ -342,7 +411,13 @@ def transfer_funds(user):
             print("Destination account not found or inactive.")
             return
 
+<<<<<<< HEAD
+        # Execute transfer as a transaction
+        conn.start_transaction()
+
+=======
         
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
         cursor.execute("UPDATE Account SET balance = balance - %s WHERE account_id = %s", (amount, from_account))
         cursor.execute("UPDATE Account SET balance = balance + %s WHERE account_id = %s", (amount, to_account))
 
@@ -361,16 +436,25 @@ def transfer_funds(user):
         print(f"\nTransfer of ${amount:.2f} successful!")
 
     except Exception as e:
+<<<<<<< HEAD
+        conn.rollback()
+=======
         if conn:
             conn.rollback()
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
         log_error(user.get("login_id", "unknown"), "TRANSFER", str(e))
         print(f"Transfer failed: {e}")
 
     finally:
+<<<<<<< HEAD
+        cursor.close()
+        conn.close()
+=======
         if cursor:
             cursor.close()
         if conn:
             conn.close()
+>>>>>>> a88a621940c18984e3a571d44d649ff159bc5130
 
 # ----------------------------
 # MAIN
