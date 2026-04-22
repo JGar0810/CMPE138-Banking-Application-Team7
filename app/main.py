@@ -42,12 +42,14 @@ def print_result(result):
     print()
 
 def print_rows(title, rows):
-    print(f"\n--- {title} ---")
     if not rows:
-        print("No records found.\n")
+        print(f"\nNo {title.lower()} found.")
         return
+    print(f"\n--- {title} ---")
     for row in rows:
-        print(row)
+        print()
+        for k, v in row.items():
+            print(f"  {k}: {v}")
     print()
 # ----------------------------
 # LOGIN
@@ -99,12 +101,11 @@ def customer_menu(user):
         print("\n--- Customer Menu ---")
         print("1. View Accounts")
         print("2. View Transactions")
-        print("3. View Customer Summary")
-        print("4. Update Profile")
-        print("5. Apply for Loan")
-        print("6. View Loan Status")
-        print("7. Make Loan Payment")
-        print("8. Request Card")
+        print("3. Update Profile")
+        print("4. Apply for Loan")
+        print("5. View Loan Status")
+        print("6. Make Loan Payment")
+        print("7. Request Card")
         print("0. Logout")
         choice = input("Select: ").strip()
 

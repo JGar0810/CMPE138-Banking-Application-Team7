@@ -201,7 +201,7 @@ class EvanBankingService:
             if loan["customer_id"] != customer_id:
                 return {"ok": False, "message": "This loan does not belong to you."}
 
-            if loan["status"] not in ("approved", "pending", "active"):
+            if loan["status"] not in ("approved", "active"):
                 return {"ok": False, "message": f"Cannot make payment on loan with status '{loan['status']}'."}
 
             remaining_balance = float(loan["remaining_balance"])
