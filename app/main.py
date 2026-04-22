@@ -5,6 +5,7 @@ import bcrypt
 from app.db import get_connection
 from app.logger import log_action, log_error
 from app.ahmad_ops import AhmadBankingService
+from app.evan_ops import EvanBankingService
 
 
 # ----------------------------
@@ -38,6 +39,15 @@ def print_result(result):
     if result.payload:
         for k, v in result.payload.items():
             print(f"  {k}: {v}")
+    print()
+
+def print_rows(title, rows):
+    print(f"\n--- {title} ---")
+    if not rows:
+        print("No records found.\n")
+        return
+    for row in rows:
+        print(row)
     print()
 # ----------------------------
 # LOGIN
@@ -83,6 +93,8 @@ def login():
 # ----------------------------
 def customer_menu(user):
     conn = get_connection()
+    service = EvanBankingService(conn)
+
     while True:
         print("\n--- Customer Menu ---")
         print("1. View Accounts")
@@ -97,57 +109,98 @@ def customer_menu(user):
         choice = input("Select: ").strip()
 
         if choice == "1":
-            cursor = conn.cursor(dictionary=True)
-            cursor.callproc("sp_get_customer_accounts", [user["customer_id"]])
-            for result in cursor.stored_results():
-                rows = result.fetchall()
-                if not rows:
-                    print("No accounts found.")
-                else:
-                    print(f"\n{'ID':<6} {'Type':<12} {'Balance':<12} {'Status':<10} {'Opened'}")
-                    print("-" * 55)
-                    for row in rows:
-                        print(f"{row['account_id']:<6} {row['account_type']:<12} ${row['balance']:<11} {row['status']:<10} {row['date_opened']}")
-            log_action(user["username"], "VIEW_ACCOUNTS", "Success")
-            cursor.close()
-
+            result = service.view_accounts(user["customer_id"])
+            if result["ok"]:
+                print_rows("Accounts", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "2":
-            account_id = ask_int("Account ID: ")
-            cursor = conn.cursor(dictionary=True)
-            cursor.callproc("sp_get_account_transactions", [account_id])
-            for result in cursor.stored_results():
-                rows = result.fetchall()
-                if not rows:
-                    print("No transactions found.")
-                else:
-                    print(f"\n{'ID':<6} {'Type':<15} {'Amount':<12} {'Date':<22} {'Description'}")
-                    print("-" * 70)
-                    for row in rows:
-                        print(f"{row['transaction_id']:<6} {row['transaction_type']:<15} ${row['amount']:<11} {str(row['transaction_date']):<22} {row['description']}")
-            log_action(user["username"], "VIEW_TRANSACTIONS", f"account {account_id}")
-            cursor.close()
-
+            result = service.view_transactions(user["customer_id"])
+            if result["ok"]:
+                print_rows("Transactions", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
         elif choice == "3":
-            cursor = conn.cursor(dictionary=True)
-            cursor.callproc("sp_get_customer_summary", [user["customer_id"]])
-            for result in cursor.stored_results():
-                rows = result.fetchall()
-                for row in rows:
-                    print(f"\nCustomer: {row['customer_name']}")
-                    print(f"Total Accounts: {row['total_accounts']}")
-                    print(f"Total Balance: ${row['total_deposit_balance']}")
-                    print(f"Total Loans: {row['total_loans']}")
-                    print(f"Remaining Loan Balance: ${row['total_remaining_loan_balance']}")
-            log_action(user["username"], "VIEW_SUMMARY", "Success")
-            cursor.close()
+            print("\nLeave blank if you do not want to change a field.")
+            address = input("New address: ").strip()
+            phone = input("New phone: ").strip()
+            email = input("New email: ").strip()
 
-        elif choice in ("4", "5", "6", "7", "8"):
-            print("Coming soon — Evan/Ahmad's operations.")
+            result = service.update_profile(
+                user["customer_id"],
+                address=address or None,
+                phone=phone or None,
+                email=email or None,
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
+        elif choice == "4":
+            loan_amount = input("Loan amount: ").strip()
+            interest_rate = input("Interest rate (%): ").strip()
+            loan_term_months = input("Loan term in months: ").strip()
+
+            result = service.apply_for_loan(
+                user["customer_id"],
+                loan_amount,
+                interest_rate,
+                loan_term_months
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print(f"Loan ID: {result['loan_id']}")
+                print(f"Monthly Payment: {result['monthly_payment']}")
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
+        elif choice == "5":
+            result = service.view_loan_status(user["customer_id"])
+            if result["ok"]:
+                print_rows("Loans", result["rows"])
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
+        elif choice == "6":
+            loan_id = input("Loan ID: ").strip()
+            amount = input("Payment amount: ").strip()
+
+            result = service.make_loan_payment(
+                user["customer_id"],
+                loan_id,
+                amount
+            )
+            if result["ok"]:
+                print("\nSUCCESS")
+                print(result["message"])
+                print(f"Paid Amount: {result['paid_amount']}")
+                print(f"Remaining Balance: {result['remaining_balance']}")
+                print(f"Loan Status: {result['loan_status']}")
+                print()
+            else:
+                print("\nERROR")
+                print(result["message"])
+                print()
+        elif choice == "7":
+            pass  # Ahmad fills this in
         elif choice == "0":
             print("Logged out.")
             break
         else:
             print("Invalid option.")
+    
     conn.close()
 
 def teller_menu(user):
