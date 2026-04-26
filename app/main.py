@@ -247,7 +247,7 @@ def customer_menu(conn, user):
             card_number = None
             if card_id is None:
                 card_number = input("Card number: ")
-            result = card_service.report_card_lost(card_id, card_number)
+            result = card_service.report_card_lost(card_id=card_id, card_number=card_number)
             print_result(result)
 
         elif choice == "0":
