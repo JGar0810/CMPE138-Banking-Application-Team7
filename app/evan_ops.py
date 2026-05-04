@@ -8,6 +8,26 @@ class EvanBankingService:
     def __init__(self, conn):
         self.conn = conn
 
+    def view_profile(self, customer_id):
+        cursor = self.conn.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT customer_id, first_name, last_name, date_of_birth,
+                       address, phone, email, username, registration_date, status
+                FROM Customer
+                WHERE customer_id = %s
+            """, (customer_id,))
+            row = cursor.fetchone()
+            if not row:
+                return {"ok": False, "message": "Customer not found.", "rows": []}
+            log_action(f"customer:{customer_id}", "VIEW_PROFILE", "Profile viewed")
+            return {"ok": True, "message": "Profile retrieved.", "rows": [row]}
+        except Exception as e:
+            log_error(f"customer:{customer_id}", "VIEW_PROFILE", str(e))
+            return {"ok": False, "message": str(e), "rows": []}
+        finally:
+            cursor.close()
+
     def view_accounts(self, customer_id):
         cursor = self.conn.cursor(dictionary=True)
         try:

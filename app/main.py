@@ -166,32 +166,40 @@ def customer_menu(conn, user):
 
     while True:
         print("\n--- Customer Menu ---")
-        print("1. View Accounts")
-        print("2. View Transactions")
-        print("3. Update Profile")
-        print("4. Apply for Loan")
-        print("5. View Loan Status")
-        print("6. Make Loan Payment")
-        print("7. Request Card")
-        print("8. Report Card Lost")
+        print("1. View Profile")
+        print("2. View Accounts")
+        print("3. View Transactions")
+        print("4. Update Profile")
+        print("5. Apply for Loan")
+        print("6. View Loan Status")
+        print("7. Make Loan Payment")
+        print("8. Request Card")
+        print("9. Report Card Lost")
         print("0. Logout")
         choice = input("Select: ").strip()
 
         if choice == "1":
+            result = evan_service.view_profile(user["customer_id"])
+            if result["ok"]:
+                print_rows("Profile", result["rows"])
+            else:
+                print("\nERROR\n" + result["message"])
+
+        elif choice == "2":
             result = evan_service.view_accounts(user["customer_id"])
             if result["ok"]:
                 print_rows("Accounts", result["rows"])
             else:
                 print("\nERROR\n" + result["message"])
 
-        elif choice == "2":
+        elif choice == "3":
             result = evan_service.view_transactions(user["customer_id"])
             if result["ok"]:
                 print_rows("Transactions", result["rows"])
             else:
                 print("\nERROR\n" + result["message"])
 
-        elif choice == "3":
+        elif choice == "4":
             print("\nLeave blank to keep current value.")
             address = input("New address: ").strip()
             phone = input("New phone: ").strip()
@@ -205,7 +213,7 @@ def customer_menu(conn, user):
             print("\nSUCCESS" if result["ok"] else "\nERROR")
             print(result["message"])
 
-        elif choice == "4":
+        elif choice == "5":
             loan_amount = ask_amount("Loan amount: ")
             interest_rate = ask_amount("Interest rate (%): ")
             loan_terms = ask_int("Loan term (months): ")
@@ -218,14 +226,14 @@ def customer_menu(conn, user):
                 print(f"  Loan ID: {result['loan_id']}")
                 print(f"  Monthly Payment: ${result['monthly_payment']}")
 
-        elif choice == "5":
+        elif choice == "6":
             result = evan_service.view_loan_status(user["customer_id"])
             if result["ok"]:
                 print_rows("Loans", result["rows"])
             else:
                 print("\nERROR\n" + result["message"])
 
-        elif choice == "6":
+        elif choice == "7":
             loan_id = input("Loan ID: ").strip()
             amount = input("Payment amount: ").strip()
             result = evan_service.make_loan_payment(user["customer_id"], loan_id, amount)
@@ -236,13 +244,13 @@ def customer_menu(conn, user):
                 print(f"  Remaining: ${result['remaining_balance']}")
                 print(f"  Status: {result['loan_status']}")
 
-        elif choice == "7":
+        elif choice == "8":
             account_id = ask_int("Account ID: ")
             card_type = input("Card type (debit/credit): ").strip()
             result = card_service.request_new_card(account_id, card_type)
             print_result(result)
 
-        elif choice == "8":
+        elif choice == "9":
             card_id = ask_int("Card ID (blank for number): ", allow_blank=True)
             card_number = None
             if card_id is None:
