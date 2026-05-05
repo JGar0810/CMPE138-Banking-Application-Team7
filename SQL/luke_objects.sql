@@ -1,4 +1,4 @@
-USE bankingsystem;
+USE banking_system;
 
 -- =========================
 -- DROP EXISTING OBJECTS
@@ -20,9 +20,9 @@ SET @x = (
     FROM information_schema.statistics
     WHERE table_schema = DATABASE()
       AND table_name = 'Account'
-      AND index_name = 'idx_account_customerid'
+      AND index_name = 'idx_account_customer_id'
 );
-SET @sql = IF(@x > 0, 'DROP INDEX idx_account_customerid ON Account', 'SELECT 1');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_account_customer_id ON Account', 'SELECT 1');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -32,9 +32,9 @@ SET @x = (
     FROM information_schema.statistics
     WHERE table_schema = DATABASE()
       AND table_name = 'Transaction'
-      AND index_name = 'idx_transaction_accountid_date'
+      AND index_name = 'idx_transaction_account_date'
 );
-SET @sql = IF(@x > 0, 'DROP INDEX idx_transaction_accountid_date ON `Transaction`', 'SELECT 1');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_transaction_account_date ON `Transaction`', 'SELECT 1');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -44,9 +44,9 @@ SET @x = (
     FROM information_schema.statistics
     WHERE table_schema = DATABASE()
       AND table_name = 'Loan'
-      AND index_name = 'idx_loan_customerid_status'
+      AND index_name = 'idx_loan_customer_status'
 );
-SET @sql = IF(@x > 0, 'DROP INDEX idx_loan_customerid_status ON Loan', 'SELECT 1');
+SET @sql = IF(@x > 0, 'DROP INDEX idx_loan_customer_status ON Loan', 'SELECT 1');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -57,51 +57,51 @@ DEALLOCATE PREPARE stmt;
 
 CREATE VIEW vw_customer_accounts AS
 SELECT
-    c.customerid,
-    CONCAT(c.firstname, ' ', c.lastname) AS customername,
+    c.customer_id,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
     c.username,
-    a.accountid,
-    a.accounttype,
+    a.account_id,
+    a.account_type,
     a.balance,
-    a.status AS accountstatus,
-    a.dateopened
+    a.status AS account_status,
+    a.date_opened
 FROM Customer c
 JOIN Account a
-    ON c.customerid = a.customerid;
+    ON c.customer_id = a.customer_id;
 
 CREATE VIEW vw_account_transactions AS
 SELECT
-    a.accountid,
-    CONCAT(c.firstname, ' ', c.lastname) AS customername,
-    a.accounttype,
-    t.transactionid,
-    t.transactiontype,
+    a.account_id,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    a.account_type,
+    t.transaction_id,
+    t.transaction_type,
     t.amount,
-    t.transactiondate,
+    t.transaction_date,
     t.description,
-    t.processedby
+    t.processed_by
 FROM Account a
 JOIN Customer c
-    ON a.customerid = c.customerid
+    ON a.customer_id = c.customer_id
 JOIN `Transaction` t
-    ON a.accountid = t.accountid;
+    ON a.account_id = t.account_id;
 
 CREATE VIEW vw_customer_loans AS
 SELECT
-    c.customerid,
-    CONCAT(c.firstname, ' ', c.lastname) AS customername,
-    l.loanid,
-    l.loanamount,
-    l.interestrate,
-    l.loantermmonths,
-    l.monthlypayment,
-    l.remainingbalance,
-    l.status AS loanstatus,
-    l.applicationdate,
-    l.decisiondate
+    c.customer_id,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    l.loan_id,
+    l.loan_amount,
+    l.interest_rate,
+    l.loan_term_months,
+    l.monthly_payment,
+    l.remaining_balance,
+    l.status AS loan_status,
+    l.application_date,
+    l.decision_date
 FROM Customer c
 JOIN Loan l
-    ON c.customerid = l.customerid;
+    ON c.customer_id = l.customer_id;
 
 -- =========================
 -- STORED PROCEDURES
@@ -109,59 +109,55 @@ JOIN Loan l
 
 DELIMITER //
 
-CREATE PROCEDURE sp_get_customer_accounts(IN p_customerid INT)
+CREATE PROCEDURE sp_get_customer_accounts(IN p_customer_id INT)
 BEGIN
     SELECT
-        a.accountid,
-        a.accounttype,
+        a.account_id,
+        a.account_type,
         a.balance,
         a.status,
-        a.dateopened
+        a.date_opened
     FROM Account a
-    WHERE a.customerid = p_customerid
-    ORDER BY a.accountid;
+    WHERE a.customer_id = p_customer_id
+    ORDER BY a.account_id;
 END //
 
-CREATE PROCEDURE sp_get_account_transactions(IN p_accountid INT)
+CREATE PROCEDURE sp_get_account_transactions(IN p_account_id INT)
 BEGIN
     SELECT
-        t.transactionid,
-        t.transactiontype,
+        t.transaction_id,
+        t.transaction_type,
         t.amount,
-        t.transactiondate,
+        t.transaction_date,
         t.description,
-        t.processedby
+        t.processed_by
     FROM `Transaction` t
-    WHERE t.accountid = p_accountid
-    ORDER BY t.transactiondate DESC, t.transactionid DESC;
+    WHERE t.account_id = p_account_id
+    ORDER BY t.transaction_date DESC, t.transaction_id DESC;
 END //
 
-CREATE PROCEDURE sp_get_customer_summary(IN p_customerid INT)
+CREATE PROCEDURE sp_get_customer_summary(IN p_customer_id INT)
 BEGIN
     SELECT
-        c.customerid,
-        CONCAT(c.firstname, ' ', c.lastname) AS customername,
-        COUNT(DISTINCT a.accountid) AS totalaccounts,
-        COALESCE(SUM(a.balance), 0) AS totaldepositbalance,
-        COUNT(DISTINCT l.loanid) AS totalloans,
+        c.customer_id,
+        CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+        COUNT(DISTINCT a.account_id) AS total_accounts,
+        COALESCE(SUM(a.balance), 0) AS total_deposit_balance,
+        COUNT(DISTINCT l.loan_id) AS total_loans,
         COALESCE(SUM(
             CASE
-                WHEN l.status IN ('approved', 'pending', 'paidoff') THEN l.remainingbalance
+                WHEN l.status IN ('approved', 'pending', 'paid_off') THEN l.remaining_balance
                 ELSE 0
             END
-        ), 0) AS totalremainingloanbalance
+        ), 0) AS total_remaining_loan_balance
     FROM Customer c
     LEFT JOIN Account a
-        ON c.customerid = a.customerid
+        ON c.customer_id = a.customer_id
     LEFT JOIN Loan l
-        ON c.customerid = l.customerid
-    WHERE c.customerid = p_customerid
-    GROUP BY c.customerid, c.firstname, c.lastname;
+        ON c.customer_id = l.customer_id
+    WHERE c.customer_id = p_customer_id
+    GROUP BY c.customer_id, c.first_name, c.last_name;
 END //
-
--- =========================
--- TRIGGERS
--- =========================
 
 CREATE TRIGGER trg_prevent_negative_balance
 BEFORE UPDATE ON Account
@@ -177,7 +173,7 @@ CREATE TRIGGER trg_card_expiry_check
 BEFORE INSERT ON Card
 FOR EACH ROW
 BEGIN
-    IF NEW.expirydate <= NEW.issuedate THEN
+    IF NEW.expiry_date <= NEW.issue_date THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Card expiry date must be after issue date';
     END IF;
@@ -189,11 +185,11 @@ DELIMITER ;
 -- INDEXES
 -- =========================
 
-CREATE INDEX idx_account_customerid
-ON Account(customerid);
+CREATE INDEX idx_account_customer_id
+ON Account(customer_id);
 
-CREATE INDEX idx_transaction_accountid_date
-ON `Transaction`(accountid, transactiondate);
+CREATE INDEX idx_transaction_account_date
+ON `Transaction`(account_id, transaction_date);
 
-CREATE INDEX idx_loan_customerid_status
-ON Loan(customerid, status);
+CREATE INDEX idx_loan_customer_status
+ON Loan(customer_id, status);
